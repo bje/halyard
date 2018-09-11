@@ -40,13 +40,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -254,6 +252,15 @@ public class HalconfigParser {
       DaemonTaskHandler.setContext(null);
       if (writer != null) {
         writer.close();
+        // Copy the latest backup to a timestamped version.
+        SimpleDateFormat sdf = new SimpleDateFormat(".yyyyMMddHHmmss");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Path versionedPath = Paths.get(path + sdf.format(new Date()));
+        try {
+          Files.copy(path, versionedPath);
+        } catch (IOException e) {
+          log.error("Could not back up config to ", versionedPath);
+        }
       }
     }
   }
