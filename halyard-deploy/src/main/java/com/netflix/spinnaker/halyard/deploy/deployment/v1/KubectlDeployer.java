@@ -35,6 +35,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.netflix.spinnaker.halyard.backup.services.v1.BackupService;
 
+import java.io.File;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -99,31 +104,25 @@ public class KubectlDeployer implements Deployer<KubectlServiceProvider,AccountD
       SpinnakerRuntimeSettings runtimeSettings,
       List<SpinnakerService.Type> serviceTypes) {
 
-    /*
-    KubernetesAccount account = deploymentDetails.getAccount();
-    List<KubernetesV2Service> services = serviceProvider.getServicesByPriority(serviceTypes);
-
-    services.stream().forEach((service) -> {
-      String namespace = service.getNamespace
-
-      List<String> command = KubernetesV2Utils.kubectlReplicasetsCommand(account, namespace);
-      String output = KubernetesV2Utils.runCommand(command);
-      System.out.print(output);
-
-      List<String> command = KubernetesV2Utils.kubectlRolloutHistoryCommand(account, namespace, service.getServiceName());
-      output = KubernetesV2Utils.runCommand(command);
-      System.out.print(output);
+    // Step One:  Look at .backup_tars directory, sort filenames, and take
+    //            second-to-last (last is "current")
+    String path = directoryStructure.getBackupTarballsPath().toString();
+    List<String> backups = Arrays.stream(new File(path).listFiles())
+                             .map(f -> f.getName())
+                             .filter(f -> f.startsWith("halbackup-"))
+                             .sorted()
+                             .collect(Collectors.toList());
+    if (backups.size() < 2) {
+      throw new UnsupportedOperationException("No backups found to roll back to.");
     }
-    */
+    String filename = backups.get(backups.size() - 2);
+
+    // Step Two:  Untar that file
+    backupService.restore(Paths.get(path, filename).toString());
+
+    // Step Three:  Apply config.
 
     throw new UnsupportedOperationException("todo(lwander)");
-    // Step one:  Look at all the replicasets and look for the youngest age.
-    // Note that multiple replicasets might be "the youngest" and may be
-    // indicative of simultaneous deploy; track all of them.
-    // List<KubernetesV2Service> services = serviceProvider.getServicesByPriority(serviceTypes);
-
-    // Step two:  For each, check the rollout history and figure out what the
-    // previous version number is, then roll it back with the rollout undo
   }
 
   @Override
