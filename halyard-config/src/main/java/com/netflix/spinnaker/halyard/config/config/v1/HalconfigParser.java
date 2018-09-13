@@ -216,7 +216,7 @@ public class HalconfigParser {
     useBackup = false;
     getHalconfig();
     useBackup = backup;
-    saveConfigTo(halconfigDirectoryStructure.getBackupConfigPath());
+    saveConfigTo(halconfigDirectoryStructure.getBackupConfigPath(), true);
   }
 
   public void switchToBackupConfig() {
@@ -231,6 +231,9 @@ public class HalconfigParser {
   }
 
   private void saveConfigTo(Path path) {
+    saveConfigTo(path, false);
+  }
+  private void saveConfigTo(Path path, Boolean saveVersion) {
     Halconfig local = (Halconfig) DaemonTaskHandler.getContext();
     if (local == null) {
       throw new HalException(
@@ -252,14 +255,16 @@ public class HalconfigParser {
       DaemonTaskHandler.setContext(null);
       if (writer != null) {
         writer.close();
-        // Copy the latest backup to a timestamped version.
-        SimpleDateFormat sdf = new SimpleDateFormat(".yyyyMMddHHmmss");
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Path versionedPath = Paths.get(path + sdf.format(new Date()));
-        try {
-          Files.copy(path, versionedPath);
-        } catch (IOException e) {
-          log.error("Could not back up config to ", versionedPath);
+        if (saveVersion) {
+          // Copy the latest backup to a timestamped version.
+          SimpleDateFormat sdf = new SimpleDateFormat(".yyyyMMddHHmmss");
+          sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+          Path versionedPath = Paths.get(path + sdf.format(new Date()));
+          try {
+            Files.copy(path, versionedPath);
+          } catch (IOException e) {
+            log.error("Could not back up config to ", versionedPath);
+          }
         }
       }
     }

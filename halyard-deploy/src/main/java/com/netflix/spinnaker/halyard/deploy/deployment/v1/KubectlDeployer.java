@@ -18,6 +18,7 @@
 
 package com.netflix.spinnaker.halyard.deploy.deployment.v1;
 
+import com.netflix.spinnaker.halyard.config.config.v1.HalconfigDirectoryStructure;
 import com.netflix.spinnaker.halyard.config.model.v1.providers.kubernetes.KubernetesAccount;
 import com.netflix.spinnaker.halyard.core.RemoteAction;
 import com.netflix.spinnaker.halyard.core.tasks.v1.DaemonTaskHandler;
@@ -30,12 +31,21 @@ import com.netflix.spinnaker.halyard.deploy.spinnaker.v1.service.distributed.kub
 import com.netflix.spinnaker.halyard.deploy.spinnaker.v1.service.distributed.kubernetes.v2.KubernetesV2Service;
 import com.netflix.spinnaker.halyard.deploy.spinnaker.v1.service.distributed.kubernetes.v2.KubernetesV2Utils;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.netflix.spinnaker.halyard.backup.services.v1.BackupService;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 public class KubectlDeployer implements Deployer<KubectlServiceProvider,AccountDeploymentDetails<KubernetesAccount>> {
+  @Autowired
+  BackupService backupService;
+
+  @Autowired
+  HalconfigDirectoryStructure directoryStructure;
+
   @Override
   public RemoteAction deploy(KubectlServiceProvider serviceProvider,
       AccountDeploymentDetails<KubernetesAccount> deploymentDetails,
@@ -78,6 +88,7 @@ public class KubectlDeployer implements Deployer<KubectlServiceProvider,AccountD
       DaemonTaskHandler.message("Running kubectl apply on the resource definition...");
       KubernetesV2Utils.apply(account, resourceDefinition);
     });
+    backupService.createIn(directoryStructure.getBackupTarballsPath());
 
     return new RemoteAction();
   }
@@ -87,7 +98,32 @@ public class KubectlDeployer implements Deployer<KubectlServiceProvider,AccountD
       AccountDeploymentDetails<KubernetesAccount> deploymentDetails,
       SpinnakerRuntimeSettings runtimeSettings,
       List<SpinnakerService.Type> serviceTypes) {
+
+    /*
+    KubernetesAccount account = deploymentDetails.getAccount();
+    List<KubernetesV2Service> services = serviceProvider.getServicesByPriority(serviceTypes);
+
+    services.stream().forEach((service) -> {
+      String namespace = service.getNamespace
+
+      List<String> command = KubernetesV2Utils.kubectlReplicasetsCommand(account, namespace);
+      String output = KubernetesV2Utils.runCommand(command);
+      System.out.print(output);
+
+      List<String> command = KubernetesV2Utils.kubectlRolloutHistoryCommand(account, namespace, service.getServiceName());
+      output = KubernetesV2Utils.runCommand(command);
+      System.out.print(output);
+    }
+    */
+
     throw new UnsupportedOperationException("todo(lwander)");
+    // Step one:  Look at all the replicasets and look for the youngest age.
+    // Note that multiple replicasets might be "the youngest" and may be
+    // indicative of simultaneous deploy; track all of them.
+    // List<KubernetesV2Service> services = serviceProvider.getServicesByPriority(serviceTypes);
+
+    // Step two:  For each, check the rollout history and figure out what the
+    // previous version number is, then roll it back with the rollout undo
   }
 
   @Override

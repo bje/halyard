@@ -116,6 +116,10 @@ public class HalconfigDirectoryStructure {
     return ensureDirectory(Paths.get(halconfigDirectory, ".backup", "required-files"));
   }
 
+  public Path getBackupTarballsPath() {
+    return ensureDirectory(Paths.get(halconfigDirectory, ".backup_tars"));
+  }
+
   public Path getServiceSettingsPath(String deploymentName) {
     File history = ensureRelativeHalDirectory(deploymentName, "history").toFile();
     return new File(history, "service-settings.yml").toPath();
