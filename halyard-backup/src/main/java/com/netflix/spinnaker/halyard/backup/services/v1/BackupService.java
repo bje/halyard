@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -97,7 +98,7 @@ public class BackupService {
     return create(tarOutputName);
   }
   public String createIn(Path path) {
-    String tarOutputName = String.format("halbackup-%s.tar", new Date()).replace(" ", "_").replace(":", "-");
+    String tarOutputName = String.format("halbackup-%s.tar", new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
     return create(tarOutputName, Paths.get(path.toString(), tarOutputName).toString());
   }
 

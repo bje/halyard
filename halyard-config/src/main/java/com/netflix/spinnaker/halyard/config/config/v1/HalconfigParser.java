@@ -216,7 +216,7 @@ public class HalconfigParser {
     useBackup = false;
     getHalconfig();
     useBackup = backup;
-    saveConfigTo(halconfigDirectoryStructure.getBackupConfigPath(), true);
+    saveConfigTo(halconfigDirectoryStructure.getBackupConfigPath());
   }
 
   public void switchToBackupConfig() {
