@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -67,7 +68,7 @@ public class BackupService {
     halconfigParser.saveConfig();
   }
 
-  public String create() {
+  public String create(String tarOutputName, String halconfigTar) {
     String halconfigDir = directoryStructure.getHalconfigDirectory();
     halconfigParser.backupConfig();
     Halconfig halconfig = halconfigParser.getHalconfig();
@@ -75,8 +76,6 @@ public class BackupService {
     halconfig.makeLocalFilesRelative(halconfigDir);
     halconfigParser.saveConfig();
 
-    String tarOutputName = String.format("halbackup-%s.tar", new Date()).replace(" ", "_").replace(":", "-");
-    String halconfigTar = Paths.get(System.getProperty("user.home"), tarOutputName).toString();
     try {
       tarHalconfig(halconfigDir, halconfigTar);
     } catch (IOException e) {
@@ -89,6 +88,17 @@ public class BackupService {
     }
 
     return halconfigTar;
+  }
+  public String create(String tarOutputName) {
+    return create(tarOutputName, Paths.get(System.getProperty("user.home"), tarOutputName).toString());
+  }
+  public String create() {
+    String tarOutputName = String.format("halbackup-%s.tar", new Date()).replace(" ", "_").replace(":", "-");
+    return create(tarOutputName);
+  }
+  public String createIn(Path path) {
+    String tarOutputName = String.format("halbackup-%s.tar", new Date()).replace(" ", "_").replace(":", "-");
+    return create(tarOutputName, Paths.get(path.toString(), tarOutputName).toString());
   }
 
 
@@ -133,6 +143,7 @@ public class BackupService {
     BufferedOutputStream bufferedTarOutput = null;
     TarArchiveOutputStream tarArchiveOutputStream = null;
     IOException fatalCleanup = null;
+    List<String> hiddenFilesToInclude = Arrays.asList(".backup", ".boms");
     try {
       tarOutput = new FileOutputStream(new File(halconfigTar));
       bufferedTarOutput = new BufferedOutputStream(tarOutput);
@@ -140,6 +151,7 @@ public class BackupService {
       TarArchiveOutputStream finalTarArchiveOutputStream = tarArchiveOutputStream;
       Arrays.stream(new File(halconfigDir).listFiles())
           .filter(Objects::nonNull)
+          .filter(f -> !f.getName().startsWith(".") || hiddenFilesToInclude.contains(f.getName()))
           .forEach(f -> addFileToTar(finalTarArchiveOutputStream, f.getAbsolutePath(), ""));
     } catch (HalException e) {
       log.info("HalException caught during tar operation", e);

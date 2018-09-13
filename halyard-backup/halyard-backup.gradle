@@ -7,5 +7,6 @@ dependencies {
   compile spinnaker.dependency('lombok')
   compile spinnaker.dependency('fabric8Api')
 
-  compile project(':halyard-deploy')
+  compile project(':halyard-config')
+  compile project(':halyard-core')
 }

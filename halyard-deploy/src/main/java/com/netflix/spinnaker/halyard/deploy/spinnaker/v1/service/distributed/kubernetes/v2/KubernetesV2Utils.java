@@ -128,17 +128,44 @@ public class KubernetesV2Utils {
 
     if (status.getState() != JobStatus.State.COMPLETED) {
       throw new HalException(Problem.Severity.FATAL, String.join("\n",
-          "Deleting spinnaker never completed in " + namespace,
-          status.getStdErr(),
-          status.getStdOut()));
+              "Deleting spinnaker never completed in " + namespace,
+              status.getStdErr(),
+              status.getStdOut()));
     }
 
     if (status.getResult() != JobStatus.Result.SUCCESS) {
       throw new HalException(Problem.Severity.FATAL, String.join("\n",
-          "Deleting spinnaker failed in " + namespace,
-          status.getStdErr(),
-          status.getStdOut()));
+              "Deleting spinnaker failed in " + namespace,
+              status.getStdErr(),
+              status.getStdOut()));
     }
+  }
+
+  static public String runCommand(List<String> command) {
+    JobRequest request = new JobRequest().setTokenizedCommand(command);
+    String jobId = DaemonTaskHandler.getJobExecutor().startJob(request);
+
+    JobStatus status;
+    try {
+      status = DaemonTaskHandler.getJobExecutor().backoffWait(jobId);
+    } catch (InterruptedException e) {
+      throw new DaemonTaskInterrupted(e);
+    }
+
+    if (status.getState() != JobStatus.State.COMPLETED) {
+      throw new HalException(Problem.Severity.FATAL, String.join("\n",
+              "Command never completed: ",
+              status.getStdErr(),
+              status.getStdOut()));
+    }
+
+    if (status.getResult() != JobStatus.Result.SUCCESS) {
+      throw new HalException(Problem.Severity.FATAL, String.join("\n",
+              "Command failed: ",
+              status.getStdErr(),
+              status.getStdOut()));
+    }
+    return status.getStdOut();
   }
 
   static public void apply(KubernetesAccount account, String manifest) {
@@ -212,7 +239,7 @@ public class KubernetesV2Utils {
     return name;
   }
 
-  private static List<String> kubectlPrefix(KubernetesAccount account) {
+  static List<String> kubectlPrefix(KubernetesAccount account) {
     List<String> command = new ArrayList<>();
     command.add("kubectl");
 
@@ -262,6 +289,36 @@ public class KubernetesV2Utils {
     command.add(name);
     command.add(port + "");
 
+    return command;
+  }
+
+  private static List<String> kubectlRolloutCommand(KubernetesAccount account, String namespace, String serviceName, String subcommand) {
+    List<String> command = kubectlPrefix(account);
+    if (StringUtils.isNotEmpty(namespace)) {
+      command.add("-n=" + namespace);
+    }
+    command.add("rollout");
+    command.add(subcommand);
+    command.add("deployment/" + serviceName);
+    return command;
+  }
+  public static List<String> kubectlRolloutHistoryCommand(KubernetesAccount account, String namespace, String serviceName) {
+    return kubectlRolloutCommand(account, namespace, serviceName, "history");
+  }
+  public static List<String> kubectlRolloutUndoCommand(KubernetesAccount account, String namespace, String serviceName, String rev) {
+    List<String> command = kubectlRolloutCommand(account, namespace, serviceName, "undo");
+    command.add("--to-revision");
+    command.add(rev);
+    return command;
+  }
+
+  public static List<String> kubectlReplicasetsCommand(KubernetesAccount account, String namespace) {
+    List<String> command = kubectlPrefix(account);
+    if (StringUtils.isNotEmpty(namespace)) {
+      command.add("-n=" + namespace);
+    }
+    command.add("get");
+    command.add("replicasets");
     return command;
   }
 

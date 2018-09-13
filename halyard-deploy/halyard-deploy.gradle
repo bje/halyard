@@ -6,6 +6,5 @@ dependencies {
   compile spinnaker.dependency('googleStorage')
   compile group: 'org.apache.commons', name: 'commons-compress', version: '1.2'
 
-  compile project(':halyard-config')
-  compile project(':halyard-core')
+  compile project(':halyard-backup')
 }
