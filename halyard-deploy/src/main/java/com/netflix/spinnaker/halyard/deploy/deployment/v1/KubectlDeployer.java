@@ -30,6 +30,7 @@ import com.netflix.spinnaker.halyard.deploy.spinnaker.v1.service.distributed.Sid
 import com.netflix.spinnaker.halyard.deploy.spinnaker.v1.service.distributed.kubernetes.v2.KubectlServiceProvider;
 import com.netflix.spinnaker.halyard.deploy.spinnaker.v1.service.distributed.kubernetes.v2.KubernetesV2Service;
 import com.netflix.spinnaker.halyard.deploy.spinnaker.v1.service.distributed.kubernetes.v2.KubernetesV2Utils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class KubectlDeployer implements Deployer<KubectlServiceProvider,AccountDeploymentDetails<KubernetesAccount>> {
   @Autowired
   BackupService backupService;
@@ -116,13 +118,15 @@ public class KubectlDeployer implements Deployer<KubectlServiceProvider,AccountD
       throw new UnsupportedOperationException("No backups found to roll back to.");
     }
     String filename = backups.get(backups.size() - 2);
+    String fullpath = Paths.get(path, filename).toString();
 
     // Step Two:  Untar that file
-    backupService.restore(Paths.get(path, filename).toString());
+    log.info("Restoring " + fullpath);
+    backupService.restore(fullpath);
 
     // Step Three:  Apply config.
 
-    throw new UnsupportedOperationException("todo(lwander)");
+    // throw new UnsupportedOperationException("todo(lwander)");
   }
 
   @Override
